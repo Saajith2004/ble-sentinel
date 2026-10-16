@@ -3,7 +3,8 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
-// BLE Sentinel v1.1
+// BLE Sentinel v1.2
+// ESP32 BLE connection-duration monitoring
 
 #define DEVICE_NAME "BLE-SENTINEL"
 
@@ -18,7 +19,9 @@ BLECharacteristic* statusCharacteristic = nullptr;
 
 bool deviceConnected = false;
 
+unsigned long connectionStartTime = 0;
 unsigned long lastUpdate = 0;
+
 const unsigned long UPDATE_INTERVAL = 2000;
 
 // BLE connection callbacks
@@ -27,13 +30,18 @@ class SentinelServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer* server) override {
     deviceConnected = true;
 
+    // Record the start of this connection session
+    connectionStartTime = millis();
+
     Serial.println("Client connected.");
+    Serial.println("Connection timer started.");
   }
 
   void onDisconnect(BLEServer* server) override {
     deviceConnected = false;
 
     Serial.println("Client disconnected.");
+    Serial.println("Connection session ended.");
 
     BLEDevice::startAdvertising();
 
@@ -41,14 +49,33 @@ class SentinelServerCallbacks : public BLEServerCallbacks {
   }
 };
 
-void setup() {
+// Format elapsed seconds as HH:MM:SS
+String formatDuration(unsigned long totalSeconds) {
+  unsigned long hours = totalSeconds / 3600;
+  unsigned long minutes = (totalSeconds % 3600) / 60;
+  unsigned long seconds = totalSeconds % 60;
 
+  char buffer[16];
+
+  snprintf(
+    buffer,
+    sizeof(buffer),
+    "%02lu:%02lu:%02lu",
+    hours,
+    minutes,
+    seconds
+  );
+
+  return String(buffer);
+}
+
+void setup() {
   Serial.begin(115200);
   delay(1000);
 
   Serial.println();
   Serial.println("==============================");
-  Serial.println("    BLE SENTINEL v1.1");
+  Serial.println("    BLE SENTINEL v1.2");
   Serial.println("==============================");
 
   // Initialize BLE
@@ -56,39 +83,30 @@ void setup() {
 
   // Create BLE server
   bleServer = BLEDevice::createServer();
+  bleServer->setCallbacks(new SentinelServerCallbacks());
 
-  bleServer->setCallbacks(
-    new SentinelServerCallbacks()
-  );
-
-  // Create custom GATT service
+  // Create GATT service
   BLEService* service =
     bleServer->createService(SERVICE_UUID);
 
   // Create readable and notifiable characteristic
-  statusCharacteristic =
-    service->createCharacteristic(
-      STATUS_UUID,
-      BLECharacteristic::PROPERTY_READ |
-      BLECharacteristic::PROPERTY_NOTIFY
-    );
-
-  // Add notification descriptor
-  statusCharacteristic->addDescriptor(
-    new BLE2902()
+  statusCharacteristic = service->createCharacteristic(
+    STATUS_UUID,
+    BLECharacteristic::PROPERTY_READ |
+    BLECharacteristic::PROPERTY_NOTIFY
   );
 
-  // Set initial status
+  // Enable notification subscription support
+  statusCharacteristic->addDescriptor(new BLE2902());
+
   statusCharacteristic->setValue(
-    "BLE Sentinel v1.1 | Status: ONLINE"
+    "BLE Sentinel v1.2 | Status: DISCONNECTED"
   );
 
-  // Start service
   service->start();
 
-  // Configure advertising
-  BLEAdvertising* advertising =
-    BLEDevice::getAdvertising();
+  // Configure BLE advertising
+  BLEAdvertising* advertising = BLEDevice::getAdvertising();
 
   advertising->addServiceUUID(SERVICE_UUID);
   advertising->setScanResponse(true);
@@ -97,36 +115,49 @@ void setup() {
 
   Serial.println("BLE initialized successfully.");
   Serial.println("Device name: BLE-SENTINEL");
-  Serial.println("Notifications enabled in firmware.");
   Serial.println("Advertising started.");
 }
 
 void loop() {
-
   unsigned long currentTime = millis();
 
   if (currentTime - lastUpdate >= UPDATE_INTERVAL) {
-
     lastUpdate = currentTime;
 
-    // Generate updated device information
-    String status =
-      "BLE Sentinel v1.1 | Uptime: " +
-      String(currentTime / 1000) +
-      "s | Free Heap: " +
-      String(ESP.getFreeHeap()) +
-      " bytes";
+    unsigned long uptimeSeconds = currentTime / 1000;
+    unsigned long connectionSeconds = 0;
 
-    // Update the characteristic
+    if (deviceConnected) {
+      connectionSeconds =
+        (currentTime - connectionStartTime) / 1000;
+    }
+
+    String status;
+
+    if (deviceConnected) {
+      status =
+        "BLE Sentinel v1.2 | Status: CONNECTED"
+        " | Connection: " +
+        formatDuration(connectionSeconds);
+    } else {
+      status =
+        "BLE Sentinel v1.2 | Status: DISCONNECTED";
+    }
+
+    status +=
+      " | Uptime: " + String(uptimeSeconds) +
+      "s | Free Heap: " +
+      String(ESP.getFreeHeap()) + " bytes";
+
+    // Update the GATT characteristic
     statusCharacteristic->setValue(status.c_str());
 
+    // Print the current status to Serial Monitor
     Serial.println(status);
 
-    // Send update when a client is connected
+    // Send a notification if the client is connected
     if (deviceConnected) {
-
       statusCharacteristic->notify();
-
       Serial.println("Notification sent.");
     }
   }
