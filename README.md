@@ -103,6 +103,59 @@ BLE notifications.
 
 ![BLE Sentinel v1.2 Connection Timer](images/ble-sentinel-v1.2-connection-timer.png)
 
+# BLE Sentinel v1.3 — RSSI Distance Experiment
+
+## Objective
+
+Investigate the relationship between the distance between
+an ESP32 BLE device and an iPhone and the received signal
+strength indicator (RSSI).
+
+## Method
+
+The ESP32 advertised its BLE service, and an iPhone running
+nRF Connect for Mobile measured the received signal strength
+at different distances.
+
+Three readings were taken at each distance, and the average
+was recorded.
+
+## Results
+
+| Distance | Average RSSI |
+|---:|---:|
+| 0.5 m | -68 dBm |
+| 1 m | -83 dBm |
+| 2 m | -86 dBm |
+| 3 m | -90 dBm |
+| 4 m | -96 dBm |
+| 5 m | -99 dBm |
+
+## Observation
+
+The average RSSI generally decreased as the distance
+increased. The reading changed from -68 dBm at 0.5 m to
+-99 dBm at 5 m.
+
+This represents a 31 dB decrease in received signal strength.
+
+## Limitations
+
+RSSI is affected by environmental conditions, antenna
+orientation, reflections and interference. The measurements
+do not establish a universal relationship between RSSI
+and distance.
+
+The starting reading of -61 dBm was excluded from the
+distance comparison because its distance was not recorded.
+
+## Conclusion
+
+The experiment demonstrated that BLE signal strength can
+vary with distance in the tested environment. Further tests
+under different environmental conditions would help assess
+the consistency of this relationship.
+
 ## Verified Results
 
 - [x] ESP32 BLE initialization
