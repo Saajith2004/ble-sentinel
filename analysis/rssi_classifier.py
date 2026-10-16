@@ -1,44 +1,64 @@
-import pandas as pd
-
+# BLE Sentinel v1.4
+# Interactive BLE RSSI Signal Classifier
 
 def classify_rssi(rssi):
     """Classify BLE signal strength using experimental thresholds."""
 
     if rssi >= -70:
-        return "Strong"
+        return "STRONG"
     elif rssi >= -85:
-        return "Moderate"
+        return "MODERATE"
     else:
-        return "Weak"
+        return "WEAK"
 
 
-# BLE Sentinel v1.4 - RSSI Signal Classification
+def main():
+    print("=" * 45)
+    print(" BLE SENTINEL v1.4")
+    print(" Interactive RSSI Signal Classifier")
+    print("=" * 45)
 
-data = {
-    "Distance_m": [0.5, 1, 2, 3, 4, 5],
-    "Average_RSSI_dBm": [-68, -83, -86, -90, -96, -99],
-}
+    print("\nSignal thresholds:")
+    print("Strong:   -70 dBm or higher")
+    print("Moderate: -85 to below -70 dBm")
+    print("Weak:     below -85 dBm")
 
-df = pd.DataFrame(data)
+    while True:
+        user_input = input(
+            "\nEnter RSSI in dBm (or 'q' to quit): "
+        ).strip()
 
-df["Signal_Classification"] = df["Average_RSSI_dBm"].apply(
-    classify_rssi
-)
+        if user_input.lower() == "q":
+            print("\nBLE Sentinel classifier closed.")
+            break
 
-print("BLE Sentinel v1.4 - RSSI Signal Classification")
-print("=" * 55)
+        try:
+            rssi = float(user_input)
 
-print(df.to_string(index=False))
+            if not -150 <= rssi <= 0:
+                print("Invalid RSSI. Enter a value from -150 to 0 dBm.")
+                continue
 
-print("\nClassification Summary")
-print("=" * 55)
+            classification = classify_rssi(rssi)
 
-summary = df["Signal_Classification"].value_counts()
+            print("\n--- Classification Result ---")
+            print(f"RSSI: {rssi:g} dBm")
+            print(f"Signal Strength: {classification}")
 
-for category in ["Strong", "Moderate", "Weak"]:
-    count = summary.get(category, 0)
-    print(f"{category}: {count} measurement(s)")
+            if classification == "STRONG":
+                print("Interpretation: Strong received signal.")
+            elif classification == "MODERATE":
+                print("Interpretation: Moderate received signal.")
+            else:
+                print("Interpretation: Weak received signal.")
 
-print("\nNote:")
-print("These thresholds are experimental, not universal BLE standards.")
-print("RSSI alone cannot reliably determine the distance to a device.")
+            print(
+                "\nNote: RSSI is affected by distance, "
+                "obstacles, interference, and antenna orientation."
+            )
+
+        except ValueError:
+            print("Invalid input. Enter a number, such as -72, or 'q'.")
+
+if __name__ == "__main__":
+    main()
