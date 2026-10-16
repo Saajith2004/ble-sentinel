@@ -77,6 +77,32 @@ for Mobile on an iPhone.
 
 ![BLE Sentinel v1.1 Notifications](images/ble-sentinel-v1.1-notifications.png)
 
+## v1.2 — BLE Connection Duration Tracking
+
+BLE Sentinel v1.2 introduces connection-duration tracking
+for a connected BLE client.
+
+### Features
+
+- Tracks the duration of the current BLE connection.
+- Reports connection status.
+- Continues monitoring ESP32 uptime.
+- Reports available ESP32 heap memory.
+- Sends periodic updates through BLE notifications.
+- Restarts the connection timer when a new connection session begins.
+
+### Testing
+
+The firmware was uploaded to an ESP32-WROOM-32U development
+board and tested using nRF Connect for Mobile on an iPhone.
+
+The connection-duration value was observed updating through
+BLE notifications.
+
+### Test Evidence
+
+![BLE Sentinel v1.2 Connection Timer](images/ble-sentinel-v1.2-connection-timer.png)
+
 ## Verified Results
 
 - [x] ESP32 BLE initialization
