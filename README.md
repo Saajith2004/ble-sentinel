@@ -51,6 +51,15 @@ Characteristic UUID:
 Characteristic value:
 
 `BLE Sentinel v1.0 | Status: ONLINE`
+## Hardware Test Evidence
+
+The ESP32 successfully advertised its BLE service and established
+a connection with an iPhone using nRF Connect for Mobile.
+
+The custom GATT characteristic was read successfully, returning
+the expected status message.
+
+![BLE Sentinel connected to iPhone](images/iphone-ble-test.png)
 
 ## Verified Results
 
