@@ -61,6 +61,22 @@ the expected status message.
 
 ![BLE Sentinel connected to iPhone](images/iphone-ble-test.png)
 
+## v1.1 — Live BLE Notifications
+
+BLE Sentinel v1.1 adds live notifications to the custom GATT
+characteristic.
+
+The ESP32 periodically reports:
+- Device uptime
+- Available heap memory
+
+Notifications were enabled and tested using nRF Connect
+for Mobile on an iPhone.
+
+### Notification Test Evidence
+
+![BLE Sentinel v1.1 Notifications](images/ble-sentinel-v1.1-notifications.png)
+
 ## Verified Results
 
 - [x] ESP32 BLE initialization
