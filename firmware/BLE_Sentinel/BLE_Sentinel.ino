@@ -3,7 +3,8 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
-// BLE Sentinel configuration
+// BLE Sentinel v1.1
+
 #define DEVICE_NAME "BLE-SENTINEL"
 
 #define SERVICE_UUID \
@@ -17,28 +18,37 @@ BLECharacteristic* statusCharacteristic = nullptr;
 
 bool deviceConnected = false;
 
+unsigned long lastUpdate = 0;
+const unsigned long UPDATE_INTERVAL = 2000;
+
+// BLE connection callbacks
 class SentinelServerCallbacks : public BLEServerCallbacks {
+
   void onConnect(BLEServer* server) override {
     deviceConnected = true;
+
     Serial.println("Client connected.");
   }
 
   void onDisconnect(BLEServer* server) override {
     deviceConnected = false;
+
     Serial.println("Client disconnected.");
 
     BLEDevice::startAdvertising();
+
     Serial.println("Advertising restarted.");
   }
 };
 
 void setup() {
+
   Serial.begin(115200);
   delay(1000);
 
   Serial.println();
   Serial.println("==============================");
-  Serial.println("       BLE SENTINEL");
+  Serial.println("    BLE SENTINEL v1.1");
   Serial.println("==============================");
 
   // Initialize BLE
@@ -51,22 +61,29 @@ void setup() {
     new SentinelServerCallbacks()
   );
 
-  // Create a custom service
+  // Create custom GATT service
   BLEService* service =
     bleServer->createService(SERVICE_UUID);
 
-  // Create a readable status characteristic
+  // Create readable and notifiable characteristic
   statusCharacteristic =
     service->createCharacteristic(
       STATUS_UUID,
-      BLECharacteristic::PROPERTY_READ
+      BLECharacteristic::PROPERTY_READ |
+      BLECharacteristic::PROPERTY_NOTIFY
     );
 
-  statusCharacteristic->setValue(
-    "BLE Sentinel v1.0 | Status: ONLINE"
+  // Add notification descriptor
+  statusCharacteristic->addDescriptor(
+    new BLE2902()
   );
 
-  // Start the service
+  // Set initial status
+  statusCharacteristic->setValue(
+    "BLE Sentinel v1.1 | Status: ONLINE"
+  );
+
+  // Start service
   service->start();
 
   // Configure advertising
@@ -76,19 +93,43 @@ void setup() {
   advertising->addServiceUUID(SERVICE_UUID);
   advertising->setScanResponse(true);
 
-  // Start broadcasting
   BLEDevice::startAdvertising();
 
   Serial.println("BLE initialized successfully.");
-  Serial.print("Device name: ");
-  Serial.println(DEVICE_NAME);
-
-  Serial.println("Service UUID:");
-  Serial.println(SERVICE_UUID);
-
+  Serial.println("Device name: BLE-SENTINEL");
+  Serial.println("Notifications enabled in firmware.");
   Serial.println("Advertising started.");
 }
 
 void loop() {
-  delay(1000);
+
+  unsigned long currentTime = millis();
+
+  if (currentTime - lastUpdate >= UPDATE_INTERVAL) {
+
+    lastUpdate = currentTime;
+
+    // Generate updated device information
+    String status =
+      "BLE Sentinel v1.1 | Uptime: " +
+      String(currentTime / 1000) +
+      "s | Free Heap: " +
+      String(ESP.getFreeHeap()) +
+      " bytes";
+
+    // Update the characteristic
+    statusCharacteristic->setValue(status.c_str());
+
+    Serial.println(status);
+
+    // Send update when a client is connected
+    if (deviceConnected) {
+
+      statusCharacteristic->notify();
+
+      Serial.println("Notification sent.");
+    }
+  }
+
+  delay(10);
 }
